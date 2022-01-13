@@ -106,7 +106,10 @@ const UICtrl = (function(){
         itemNameInput: '#item-name',
         itemCaloriesInput: '#item-calories',
         addBtn: '.add-btn',
-        totalCalories: '.total-calories'
+        totalCalories: '.total-calories',
+        updateBtn: '.update-btn',
+        editItem: '.edit-item',
+        deleteBtn: '.delete-btn'
     }
     return{
         populateItemList: function(items){
@@ -159,6 +162,9 @@ const UICtrl = (function(){
         },
         showTotalCalories: function (totalCalories){
             document.querySelector(UISelectors.totalCalories).textContent = totalCalories;
+        },
+        updateMeal: function (){
+            document.querySelector(UISelectors.updateBtn).style.display = 'inline';
         }
     }
 })();
