@@ -48,7 +48,8 @@ const ItemCtrl = (function(){
             {id: 1, name: 'Cake', calories: 900},
             {id: 2, name: 'Eggs', calories: 300}*/
         ],
-        total: 0
+        total: 0,
+        currentItem: null
     }
 
     return {
@@ -77,6 +78,25 @@ const ItemCtrl = (function(){
              console.log(newItem)*/
             //return new item
             return newItem
+        },
+
+        // search item by id
+        searchItem: function (id){
+            let result = null;
+            data.items.forEach(function(item){
+                if(item.id === id){
+                    result = item;
+                }
+            });
+            console.log('Result: ', result);
+            return result;
+
+        },
+        setCurrentItem: function(item){
+            data.currentItem = item;
+        },
+        getCurrentItem: function(){
+            return data.currentItem;
         },
         //total calories
         getTotalCalories: function(){
@@ -108,7 +128,7 @@ const UICtrl = (function(){
         addBtn: '.add-btn',
         totalCalories: '.total-calories',
         updateBtn: '.update-btn',
-        editItem: '.edit-item',
+        editItemBtn: '#item-list',
         deleteBtn: '.delete-btn'
     }
     return{
@@ -121,7 +141,7 @@ const UICtrl = (function(){
                 html += `<li class="collection-item" id="item-${item.id}">
         <strong>${item.name}: </strong> <em>${item.calories} Calories</em>
         <a href="#" class="secondary-content">
-            <i class="fas fa-pencil-alt"></i>
+            <i class="edit-item fas fa-pencil-alt"></i>
         </a>
         </li>`
             });
@@ -163,8 +183,23 @@ const UICtrl = (function(){
         showTotalCalories: function (totalCalories){
             document.querySelector(UISelectors.totalCalories).textContent = totalCalories;
         },
-        updateMeal: function (){
+        mealEditModeOff: function (){
+            document.querySelector(UISelectors.addBtn).style.display = 'inline';
+            document.querySelector(UISelectors.updateBtn).style.display = 'none';
+            document.querySelector(UISelectors.deleteBtn).style.display = 'none';
+            console.log('Meal edit mode OFF');
+        },
+        mealEditModeOn: function (){
+            document.querySelector(UISelectors.addBtn).style.display = 'none';
             document.querySelector(UISelectors.updateBtn).style.display = 'inline';
+            document.querySelector(UISelectors.deleteBtn).style.display = 'inline';
+            console.log('Meal edit mode ON');
+        },
+        addItemToForm: function(){
+            document.querySelector(UISelectors.itemNameInput).value = ItemCtrl.getCurrentItem().name;
+            document.querySelector(UISelectors.itemCaloriesInput).value = ItemCtrl.getCurrentItem().calories;
+            // display edit mode buttons
+            UICtrl.mealEditModeOn()
         }
     }
 })();
@@ -180,7 +215,46 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
         document.querySelector(UISelectors.addBtn).addEventListener('click', itemAddSubmit);
         //ad document reload event
         document.addEventListener('DOMContentLoaded', getItemsFromStorage);
+        // edit meal event
+        // console.log('Edit item Button', UISelectors.editItemBtn);
+        //console.log('Edit item Button', document.querySelector(UISelectors.editItemBtn));
+        document.querySelector(UISelectors.editItemBtn).addEventListener('click', editMeal);
+
+        // update meal event
+        // document.querySelector(UISelectors.updateBtn).addEventListener('click', submitEditMeal);
+
     }
+
+    // edit meal function
+    const editMeal = function (event){
+        // get click target
+        console.log('Edit click target: ', event.target.classList.contains('edit-item'))
+        if(event.target.classList.contains('edit-item')) {
+            // get clicked item id
+            console.log('Find clicked ID: ', event.target.parentElement.parentElement.id)
+            const clickedId = event.target.parentElement.parentElement.id;
+
+            // into array to get id
+            const clickedIdArray = clickedId.split('-');
+            const id = parseInt(clickedIdArray[1]);
+
+            // send id to search to get item params for form population
+            const itemForEdit = ItemCtrl.searchItem(id);
+
+            // save search result to currentItem
+            ItemCtrl.setCurrentItem(itemForEdit);
+            //ItemCtrl.data.currentItem = itemForEdit;
+            //console.log('Item for edit: ', itemForEdit);
+            //console.log('ItemCtrl.currentItem: ', ItemCtrl.data.currentItem);
+
+            // Add item to form
+            UICtrl.addItemToForm();
+
+
+        }
+
+    }
+
     //item add submit function
     const itemAddSubmit = function(event){
         //get form input UI Controller
@@ -227,6 +301,8 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
             UICtrl.populateItemList(items)
             //load event listeners
             loadEventListeners();
+            // hide Modify ja Delete Meal button, i.e Edit Mode OFF
+            UICtrl.mealEditModeOff();
         }
     }
 })(ItemCtrl, StorageCtrl, UICtrl);
