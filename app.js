@@ -48,6 +48,9 @@ const StorageCtrl = (function (){
                 }
             });
             localStorage.setItem('items', JSON.stringify(items));
+        },
+        clearItemsFromStorage: function(){
+            localStorage.removeItem('items');
         }
     }
 }) ();
@@ -141,6 +144,9 @@ const ItemCtrl = (function(){
             // Remove item
             data.items.splice(index, 1);
         },
+        clearAllItems: function(){
+        data.items = [];
+        },
         setCurrentItem: function(item){
             data.currentItem = item;
         },
@@ -179,7 +185,9 @@ const UICtrl = (function(){
         totalCalories: '.total-calories',
         updateBtn: '.update-btn',
         editItemBtn: '#item-list',
-        deleteBtn: '.delete-btn'
+        deleteBtn: '.delete-btn',
+        clearAllBtn: '.clearAllBtn',
+        backBtn: '.back-btn'
     }
     return{
         populateItemList: function(items){
@@ -256,16 +264,21 @@ const UICtrl = (function(){
             document.querySelector(UISelectors.totalCalories).textContent = totalCalories;
         },
         mealEditModeOff: function (){
+            //clear fields
+            UICtrl.clearInput()
+            // show/hide buttons
             document.querySelector(UISelectors.addBtn).style.display = 'inline';
             document.querySelector(UISelectors.updateBtn).style.display = 'none';
             document.querySelector(UISelectors.deleteBtn).style.display = 'none';
-            console.log('Meal edit mode OFF');
+            document.querySelector(UISelectors.backBtn).style.display = 'none';
+            // console.log('Meal edit mode OFF');
         },
         mealEditModeOn: function (){
             document.querySelector(UISelectors.addBtn).style.display = 'none';
             document.querySelector(UISelectors.updateBtn).style.display = 'inline';
             document.querySelector(UISelectors.deleteBtn).style.display = 'inline';
-            console.log('Meal edit mode ON');
+            document.querySelector(UISelectors.backBtn).style.display = 'inline';
+            // console.log('Meal edit mode ON');
         },
         addItemToForm: function(){
             document.querySelector(UISelectors.itemNameInput).value = ItemCtrl.getCurrentItem().name;
@@ -275,6 +288,16 @@ const UICtrl = (function(){
         },
         submitEditMeal: function (){
             return this.submitEditMeal;
+        },
+        removeItems: function(){
+            let listItems = document.querySelectorAll(UISelectors.listItems);
+
+            // Turn Node list into array
+            listItems = Array.from(listItems);
+
+            listItems.forEach(function(item){
+                item.remove();
+            });
         }
     }
 })();
@@ -285,14 +308,11 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
     const loadEventListeners = function (){
         //get UI selectors
         const UISelectors = UICtrl.getSelectors();
-        //console.log(UISelectors)
         //add item event
         document.querySelector(UISelectors.addBtn).addEventListener('click', itemAddSubmit);
         //ad document reload event
         document.addEventListener('DOMContentLoaded', getItemsFromStorage);
         // edit meal event
-        // console.log('Edit item Button', UISelectors.editItemBtn);
-        //console.log('Edit item Button', document.querySelector(UISelectors.editItemBtn));
         document.querySelector(UISelectors.editItemBtn).addEventListener('click', editMeal);
 
         // update meal event
@@ -301,29 +321,32 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
         // Delete item event
         document.querySelector(UISelectors.deleteBtn).addEventListener('click', itemDeleteSubmit);
 
+        // Clear all event
+        document.querySelector(UISelectors.clearAllBtn).addEventListener('click', clearAllItems)
+
+        // Back button event
+        document.querySelector(UISelectors.backBtn).addEventListener('click', UICtrl.mealEditModeOff)
     }
 
     // edit meal function
     const editMeal = function (event){
         // get click target
-        console.log('Edit click target: ', event.target.classList.contains('edit-item'))
+        // console.log('Edit click target: ', event.target.classList.contains('edit-item'))
         if(event.target.classList.contains('edit-item')) {
             // get clicked item id
-            console.log('Find clicked ID: ', event.target.parentElement.parentElement.id)
+            // console.log('Find clicked ID: ', event.target.parentElement.parentElement.id)
             const clickedId = event.target.parentElement.parentElement.id;
 
             // into array to get id
             const clickedIdArray = clickedId.split('-');
             const id = parseInt(clickedIdArray[1]);
-            console.log('Clicked id: ', id)
+            // console.log('Clicked id: ', id)
             // send id to search to get item params for form population
             const itemForEdit = ItemCtrl.searchItem(id);
 
             // save search result to currentItem
             ItemCtrl.setCurrentItem(itemForEdit);
-            //ItemCtrl.data.currentItem = itemForEdit;
-            console.log('Item for edit: ', itemForEdit);
-            //console.log('ItemCtrl.currentItem: ', ItemCtrl.data.currentItem);
+            // console.log('Item for edit: ', itemForEdit);
 
             // Add item to form
             UICtrl.addItemToForm();
@@ -335,27 +358,24 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
 
     // submit edit meal (update meal button) function
     const submitEditMeal = function (event){
-        console.log('Fired submitEditMeal')
+        // console.log('Fired submitEditMeal')
             //get form input UI Controller
             const input = UICtrl.getItemInput()
-            console.log('GetItemInput: ', input)
+            // console.log('GetItemInput: ', input)
             //check for name and calorie input
             if(input.name !== '' && input.calories !== ''){
-                console.log('Currentitem', ItemCtrl.getCurrentItem().id)
+                // console.log('Currentitem', ItemCtrl.getCurrentItem().id)
 
                 const updatedItem = ItemCtrl.updateItem(input.name, input.calories)
                 //add item to UI items list
                 UICtrl.updateListItem(updatedItem)
-                //console.log(newItem)
-                // console.log('add item to data structure')
                 //get total calories
                 const totalCalories = ItemCtrl.getTotalCalories();
                 //add total calories to UI
                 UICtrl.showTotalCalories(totalCalories);
                 //store in localStorage
                 StorageCtrl.updateItemStorage(updatedItem);
-                //clear fields
-                UICtrl.clearInput()
+
                 UICtrl.mealEditModeOff()
             }
             event.preventDefault()
@@ -423,6 +443,31 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
         //populate items list
         UICtrl.populateItemList(items)
     }
+
+    // Clear items event
+    const clearAllItems = function(){
+        // Delete all items from data structure
+        ItemCtrl.clearAllItems();
+
+        // Get total calories
+        const totalCalories = ItemCtrl.getTotalCalories();
+        // Add total calories to UI
+        UICtrl.showTotalCalories(totalCalories);
+
+        // Remove from UI
+        UICtrl.removeItems();
+
+        // Clear from local storage
+        StorageCtrl.clearItemsFromStorage();
+
+        // in case Clear all was clicked during Edit meal
+        UICtrl.mealEditModeOff()
+
+        // Hide UL
+        // UICtrl.hideList();
+
+    }
+
     return {
         init: function (){
             console.log('Initializing App')
