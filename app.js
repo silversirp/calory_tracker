@@ -38,6 +38,16 @@ const StorageCtrl = (function (){
                 }
             });
             localStorage.setItem('items', JSON.stringify(items));
+        },
+        deleteItemFromStorage: function(id){
+            let items = JSON.parse(localStorage.getItem('items'));
+
+            items.forEach(function(item, index){
+                if(id === item.id){
+                    items.splice(index, 1);
+                }
+            });
+            localStorage.setItem('items', JSON.stringify(items));
         }
     }
 }) ();
@@ -118,6 +128,18 @@ const ItemCtrl = (function(){
                 }
             });
             return result;
+        },
+        deleteItem: function(id){
+            // Get ids
+            const ids = data.items.map(function(item){
+                return item.id;
+            });
+
+            // Get index
+            const index = ids.indexOf(id);
+
+            // Remove item
+            data.items.splice(index, 1);
         },
         setCurrentItem: function(item){
             data.currentItem = item;
@@ -221,6 +243,11 @@ const UICtrl = (function(){
                 }
             });
         },
+        deleteListItem: function(id){
+            const itemID = `#item-${id}`;
+            const item = document.querySelector(itemID);
+            item.remove();
+        },
         clearInput: function (){
             document.querySelector(UISelectors.itemNameInput).value = '';
             document.querySelector(UISelectors.itemCaloriesInput).value = '';
@@ -271,6 +298,9 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
         // update meal event
         document.querySelector(UISelectors.updateBtn).addEventListener('click', submitEditMeal);
 
+        // Delete item event
+        document.querySelector(UISelectors.deleteBtn).addEventListener('click', itemDeleteSubmit);
+
     }
 
     // edit meal function
@@ -306,7 +336,6 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
     // submit edit meal (update meal button) function
     const submitEditMeal = function (event){
         console.log('Fired submitEditMeal')
-        // const itemAddSubmit = function(event){
             //get form input UI Controller
             const input = UICtrl.getItemInput()
             console.log('GetItemInput: ', input)
@@ -330,7 +359,31 @@ const App = (function(ItemCtrl, StorageCtrl,UICtrl){
                 UICtrl.mealEditModeOff()
             }
             event.preventDefault()
-        // }
+
+    }
+
+    // Delete button event
+    const itemDeleteSubmit = function(e){
+        // Get current item
+        const currentItem = ItemCtrl.getCurrentItem();
+
+        // Delete from data structure
+        ItemCtrl.deleteItem(clientInformation);
+
+        // Delete from UI
+        UICtrl.deleteListItem(currentItem.id);
+
+        // Get total calories
+        const totalCalories = ItemCtrl.getTotalCalories();
+        // Add total calories to UI
+        UICtrl.showTotalCalories(totalCalories);
+
+        // Delete from local storage
+        StorageCtrl.deleteItemFromStorage(currentItem.id);
+
+        UICtrl.mealEditModeOff();
+
+        e.preventDefault();
     }
 
     //item add submit function
